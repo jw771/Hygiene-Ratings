@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <title>Food Hygiene Ratings</title>
+
+    <style type="text/css">
+
+        body {
+            background-color: #b4d0ff;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: Calibri;
+            font-size: 200%;
+        }
+
+        p {
+            text-align: center;
+            font-family: Calibri;
+            font-size: 100%;
+        }
+
+        #navigation {
+            font-weight: bold;
+            font-family: Calibri;
+            font-size: 100%;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+
+        #pages {
+            padding-right: 10px;
+        }
+
+        .search_box {
+            font-weight: bold;
+            font-family: Calibri;
+            font-size: 100%;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        table, th, td {
+            font-family: Calibri;
+            font-size: 100%;
+            border: 0.5px solid black;
+        }
+
+        th {
+            text-align: left;
+            background-color: #3c49ff;
+            color: #ffffff;
+        }
+
+        td {
+            background: #cadfff;
+        }
+    </style>
+
+    <script>
+
+        // Function is available when the document loads
+        $(document).ready(function () {
+            page_number = 1;
+            findPage(page_number);
+            pageNumbers();
+        });
+
+        var total_pages;
+        var page_number;
+
+        function findPage(page_number) {
+            $("tbody tr").remove();
+            $.get('https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=retrieve&page=' + page_number, function (json) {
+                var tr = json;
+                for (var i = 0; i < json.length; i++) {
+                    var tr = $('<tr/>');
+                    $(tr).append("<td>" + json[i].business + "</td>");
+                    $(tr).append("<td>" + json[i].address + "</td>");
+                    $(tr).append("<td>" + json[i].rating + "</td>");
+                    $(tr).append("<td>" + json[i].date + "</td>");
+                    $(tr).append('<td><button onClick="getRating(\'' + json[i].business + '\',\'' + json[i].postcode + '\')">Get Rating</button></td>')
+                    $('.rating_table').append(tr);
+                }
+            }, "json");
+        }
+
+        function pageNumbers() {
+            // Find sum of all pages
+            $.get('https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=pages', function (json) {
+                total_pages = json.pages;
+                count = 1;
+                var navigation = '';
+
+                for (var j = 0; j < total_pages; j++) {
+                    navigation += '<button onClick="findPage(' + count + ')">' + count + '</button> ';
+                    count++
+                }
+                $('#navigation').append(navigation);
+            }, "json");
+        }
+
+        function getRating(name, postcode) {
+            $.get('https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/rating.php?name=' + name, function (data) {
+
+                var available = false;
+                var tr = data;
+
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].address.search(postcode) != -1) {
+                        if (data[i].rating == '') {
+                            alert("Sorry, no customer rating available");
+                            available = true;
+
+                        } else {
+
+                            alert('The Customer rating is ' + data[i].rating);
+                            available = true;
+                        }
+                    }
+                }
+                if (available == false) {
+                    alert("Sorry, no customer rating available");
+                }
+            }, "json");
+        }
+
+        function nameSearch(name) {
+            // Clear table, and return search results
+            $.get('https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=searchname&name=' + name, function (data) {
+                $("tbody tr").remove();
+
+                var tr = data;
+
+                for (var i = 0; i < data.length; i++) {
+                    var tr = $('<tr/>');
+
+                    //Indexing into data.report for each td element
+                    $(tr).append("<td>" + data[i].business + "</td>");
+                    $(tr).append("<td>" + data[i].address + "</td>");
+                    $(tr).append("<td>" + data[i].rating + "</td>");
+                    $(tr).append("<td>" + data[i].date + "</td>");
+                    $(tr).append('<td><button onClick="getRating(\'' + data[i].business + '\'.\'' + data[i].postcode + '\')">Get Rating</button></td>')
+                    $('.rating_table').append(tr);
+                }
+            }, "json");
+        }
+
+    </script>
+</head>
+<body>
+<h1>Food Standards Agency</h1>
+<p>Hygiene ratings for restaurants and businesses around Canterbury</p>
+<div id="navigation"><label id="pages">Pages</label></div>
+
+<div class="search_box">
+    <label for="searchName">Business Name</label>
+    <input type="text" id="searchName">
+    <button onClick="nameSearch(document.getElementById('searchName').value)">Search</button>
+</div>
+
+<table class="rating_table">
+    <thead>
+    <tr>
+        <th id="business">Business</th>
+        <th id="address">Address</th>
+        <th id="hygiene">Hygiene</th>
+        <th id="date">Date</th>
+        <th id="Rating">Rating</th>
+    </tr>
+    </thead>
+</table>
+
+</body>
+</html>
